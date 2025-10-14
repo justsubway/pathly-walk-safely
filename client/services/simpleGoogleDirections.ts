@@ -1,0 +1,102 @@
+import { LatLng } from '../lib/types';
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'your_google_maps_api_key_here';
+const DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
+export interface SimpleRoute {
+  coordinates: LatLng[];
+  distance: number; // meters
+  duration: number; // seconds
+  summary: string;
+}
+export async function getSimpleGoogleRoute(
+  origin: LatLng,
+  destination: LatLng
+): Promise<SimpleRoute | null> {
+  if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY.includes('YOUR_') || GOOGLE_MAPS_API_KEY.length < 30) {
+    console.warn('⚠️ Google API key not set properly, using fallback');
+    console.log('Current API key:', GOOGLE_MAPS_API_KEY);
+    return null;
+  }
+  console.log('✅ Using Google API key:', GOOGLE_MAPS_API_KEY.substring(0, 20) + '...');
+  try {
+    const params = new URLSearchParams({
+      origin: `${origin.latitude},${origin.longitude}`,
+      destination: `${destination.latitude},${destination.longitude}`,
+      mode: 'walking',
+      key: GOOGLE_MAPS_API_KEY
+    });
+    const url = `${DIRECTIONS_URL}?${params}`;
+    console.log('🌐 Fetching Google route...');
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.status !== 'OK' || !data.routes || data.routes.length === 0) {
+      console.error('Google Directions API error:', data.status, data.error_message);
+      return null;
+    }
+    const route = data.routes[0];
+    const leg = route.legs[0];
+    const coordinates = decodePolyline(route.overview_polyline.points);
+    console.log('✅ Got Google route:', {
+      distance: leg.distance.text,
+      duration: leg.duration.text,
+      points: coordinates.length
+    });
+    return {
+      coordinates,
+      distance: leg.distance.value,
+      duration: leg.duration.value,
+      summary: route.summary || 'Walking route'
+    };
+  } catch (error) {
+    console.error('❌ Google Directions error:', error);
+    return null;
+  }
+}
+export async function testGoogleIntegration(origin: LatLng, destination: LatLng): Promise<boolean> {
+  console.log('🧪 Testing Google integration...');
+  const route = await getSimpleGoogleRoute(origin, destination);
+  if (route) {
+    console.log('✅ Google integration working!');
+    console.log(`📏 Distance: ${(route.distance / 1000).toFixed(2)} km`);
+    console.log(`⏱️ Duration: ${Math.round(route.duration / 60)} minutes`);
+    console.log(`🗺️ Route points: ${route.coordinates.length}`);
+    return true;
+  } else {
+    console.log('❌ Google integration failed - using fallback');
+    return false;
+  }
+}
+function decodePolyline(encoded: string): LatLng[] {
+  const coordinates: LatLng[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    let shift = 0;
+    let result = 0;
+    let byte: number;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    const deltaLat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += deltaLat;
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    const deltaLng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += deltaLng;
+    coordinates.push({
+      latitude: lat / 1e5,
+      longitude: lng / 1e5
+    });
+  }
+  return coordinates;
+}
