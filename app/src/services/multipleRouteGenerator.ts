@@ -1,6 +1,7 @@
 import { LatLng } from '../lib/types';
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || 'your_google_maps_api_key_here';
+import { API_CONFIG } from './api-config';
+const GOOGLE_MAPS_API_KEY = API_CONFIG.GOOGLE_MAPS_API_KEY;
 const DIRECTIONS_URL = 'https://maps.googleapis.com/maps/api/directions/json';
 
 export interface EnhancedRoute {
@@ -81,6 +82,9 @@ async function generateDirectRoutes(origin: LatLng, destination: LatLng): Promis
   const strategies: string[] = [];
 
   try {
+    console.log('🗺️ Generating direct routes from:', origin, 'to:', destination);
+    console.log('🔑 Using API key:', GOOGLE_MAPS_API_KEY ? 'Present' : 'Missing');
+    
     const params = new URLSearchParams({
       origin: `${origin.latitude},${origin.longitude}`,
       destination: `${destination.latitude},${destination.longitude}`,
@@ -89,10 +93,17 @@ async function generateDirectRoutes(origin: LatLng, destination: LatLng): Promis
       key: GOOGLE_MAPS_API_KEY
     });
 
-    const response = await fetch(`${DIRECTIONS_URL}?${params}`);
+    const url = `${DIRECTIONS_URL}?${params}`;
+    console.log('🌐 Making request to:', url);
+    
+    const response = await fetch(url);
+    console.log('📡 Response status:', response.status);
+    
     const data = await response.json();
+    console.log('📊 Google API response:', data);
 
     if (data.status === 'OK' && data.routes) {
+      console.log(`✅ Found ${data.routes.length} routes from Google API`);
       for (let i = 0; i < Math.min(data.routes.length, 3); i++) {
         const route = data.routes[i];
         const leg = route.legs[0];
@@ -128,7 +139,11 @@ async function generateDirectRoutes(origin: LatLng, destination: LatLng): Promis
       }
     }
   } catch (error) {
-    console.error('Error generating direct routes:', error);
+    console.error('❌ Error generating direct routes:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
   }
 
   return { routes, strategies };

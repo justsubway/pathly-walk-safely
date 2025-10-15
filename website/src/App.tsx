@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Home from './components/Home';
 import Features from './components/Features';
+import Contact from './components/Contact';
 import SmoothScrollProvider from './components/SmoothScrollProvider';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         <Header isGreek={isGreek} onLanguageToggle={toggleLanguage} />
         <Home isGreek={isGreek} />
         <Features isGreek={isGreek} />
+        <Contact isGreek={isGreek} />
       </div>
     </SmoothScrollProvider>
   );

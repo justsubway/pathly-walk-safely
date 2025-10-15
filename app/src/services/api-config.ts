@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+
 export const API_CONFIG = {
   GOOGLE_MAPS_API_KEY: (Constants as any).expoConfig?.extra?.googleMapsApiKey || '',
   GOOGLE_MAPS_BASE_URL: 'https://maps.googleapis.com/maps/api',

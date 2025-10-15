@@ -6,6 +6,7 @@ import LocationInput from '../components/LocationInput';
 import RouteList from '../components/RouteList';
 import MapView from '../components/MapView';
 import { generateMultipleRoutes, EnhancedRoute } from '../services/multipleRouteGenerator';
+import { apiService } from '../services/apiService';
 import { crimeDataService } from '../services/crimeDataService';
 import { greekTranslations } from '../translations/greek';
 
@@ -245,7 +246,28 @@ export default function HomeScreen(): React.JSX.Element {
     setSelectedRouteId(null);
     
     try {
-      // Pre-load crime data in parallel with route generation for better performance
+      // Prefer backend routes with AI/crime data; fallback to local generation
+      const backendHealthy = await apiService.checkHealth();
+      if (backendHealthy) {
+        const backendResp = await apiService.generateRoutes(origin.location, destination.location, selectedHour);
+        if (backendResp && backendResp.status === 'success' && backendResp.routes.length > 0) {
+          setIsProcessingRoutes(true);
+          requestAnimationFrame(() => {
+            const converted = apiService.convertAPIRoutesToRouteResults(backendResp.routes);
+            setRoutes(converted);
+            setIsProcessingRoutes(false);
+            if (converted.length > 0) {
+              setSelectedRouteId(converted[0].id);
+            }
+            setTimeout(() => {
+              Alert.alert('Διαδρομές Δημιουργήθηκαν! 🏠', `Λήφθηκαν ${converted.length} διαδρομές από τον διακομιστή AI`);
+            }, 300);
+          });
+          return;
+        }
+      }
+
+      // Fallback: local route generation + local crime scoring
       const [multipleRoutesResult, crimeLoaded] = await Promise.all([
         generateMultipleRoutes(origin.location, destination.location, 3),
         crimeDataService.loadCrimeData()
@@ -253,32 +275,23 @@ export default function HomeScreen(): React.JSX.Element {
 
       if (multipleRoutesResult.status === 'success') {
         setIsProcessingRoutes(true);
-        
-        // Defer heavy calculations to prevent UI blocking
         requestAnimationFrame(() => {
           const routesWithSafety = convertEnhancedRoutesToRouteResults(
             multipleRoutesResult.routes,
             selectedHour,
             crimeLoaded
           );
-          
-          // Batch state updates to prevent multiple re-renders
           setRoutes(routesWithSafety);
           setIsProcessingRoutes(false);
-          
           if (routesWithSafety.length > 0) {
             setSelectedRouteId(routesWithSafety[0].id);
           }
-          
-          // Delay alert to prevent blocking route display
           setTimeout(() => {
-            Alert.alert('Διαδρομές Δημιουργήθηκαν! 🏠', 
-              `Δημιουργήθηκαν ${routesWithSafety.length} διαδρομές χρησιμοποιώντας πρόσφατα δεδομένα`
-            );
+            Alert.alert('Διαδρομές Δημιουργήθηκαν! 🏠', `Δημιουργήθηκαν ${routesWithSafety.length} διαδρομές τοπικά`);
           }, 300);
         });
       } else {
-        Alert.alert('Σφάλμα', 'Αποτυχία δημιουργίας διαδρομών τοπικά');
+        Alert.alert('Σφάλμα', 'Αποτυχία δημιουργίας διαδρομών');
       }
     } catch (error) {
       console.error('❌ Route generation failed:', error);

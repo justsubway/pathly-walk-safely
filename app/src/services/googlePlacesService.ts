@@ -35,7 +35,9 @@ export interface PlaceSuggestion {
   coordinates: LatLng;
 }
 export async function getPlaceAutocomplete(input: string): Promise<PlaceSuggestion[]> {
+  console.log('🔍 Google Places API Key:', API_CONFIG.GOOGLE_MAPS_API_KEY ? 'Present' : 'Missing');
   if (!API_CONFIG.GOOGLE_MAPS_API_KEY) {
+    console.error('❌ Google Maps API key not configured');
     throw new Error('Google Maps API key not configured');
   }
   if (input.length < 2) {

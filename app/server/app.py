@@ -14,12 +14,24 @@ from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 import requests
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React Native requests
 
 # Configuration
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', 'your_google_maps_api_key_here')
+# Load environment variables from potential locations
+# 1) app/.env (one level up from server directory)
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+# 2) repo root .env (two levels up)
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+
+# Prefer explicit backend key, fallback to Expo public key, then placeholder
+GOOGLE_MAPS_API_KEY = (
+    os.getenv('GOOGLE_MAPS_API_KEY')
+    or os.getenv('EXPO_PUBLIC_GOOGLE_MAPS_API_KEY')
+    or 'your_google_maps_api_key_here'
+)
 CRIME_DATA_PATH = "processed_crime_data.json"
 
 # Global variables for cached data
@@ -340,12 +352,12 @@ def ai_risk_endpoint():
         return jsonify({'error': str(e)}), 500
 
 def calculate_route_safety(coords, time_hour):
-    """Calculate safety score for a route based on crime data"""
+    """Calculate safety score for a route based on enhanced crime data"""
     if not crime_data or not coords:
-        return 75  # Higher default score for Athens
+        return 50  # Lower default to be more realistic
     
     try:
-        total_risk = 0
+        total_safety = 0
         segments_checked = 0
         
         # Check safety along route segments
@@ -360,28 +372,55 @@ def calculate_route_safety(coords, time_hour):
                 # Calculate time-based risk multiplier
                 time_multiplier = get_time_risk_multiplier(time_hour)
                 
-                # Calculate risk based on crime density and types
-                segment_risk = 0
+                # Calculate safety based on crime density, types, and area danger level
+                segment_safety = 100  # Start with perfect safety
                 for crime in nearby_crimes:
-                    crime_weight = get_crime_weight(crime.get('incident_type', '') or crime.get('safety_category', ''))
+                    # Use the enhanced safety rating from our data
+                    crime_safety = crime.get('safety_rating', 50)
+                    area_danger = crime.get('area_danger_level', 'Medium')
+                    
+                    # Apply area danger multiplier
+                    if area_danger == 'Very High':
+                        danger_multiplier = 0.3  # Very dangerous areas
+                    elif area_danger == 'High':
+                        danger_multiplier = 0.5  # High danger areas
+                    elif area_danger == 'Medium':
+                        danger_multiplier = 0.7  # Medium danger areas
+                    else:
+                        danger_multiplier = 0.9  # Low danger areas
+                    
+                    # Apply time multiplier
+                    adjusted_safety = crime_safety * danger_multiplier * time_multiplier
+                    
+                    # Apply distance factor
                     distance_factor = calculate_distance_factor(lat, lng, crime)
-                    segment_risk += crime_weight * distance_factor * time_multiplier
+                    final_safety = adjusted_safety * distance_factor
+                    
+                    # Take the minimum safety (most dangerous crime in area)
+                    segment_safety = min(segment_safety, final_safety)
                 
-                total_risk += segment_risk
+                total_safety += segment_safety
+                segments_checked += 1
+            else:
+                # No nearby crimes - check if we're in a dangerous area
+                area_safety = get_area_safety_score(lat, lng)
+                total_safety += area_safety
                 segments_checked += 1
         
         if segments_checked == 0:
-            return 88  # Higher baseline for no crimes
+            return 50  # Lower baseline
         
-        # More optimistic conversion for Athens
-        avg_risk = total_risk / segments_checked
-        safety_score = max(35, min(100, 85 - (avg_risk * 3)))
+        # Calculate average safety
+        avg_safety = total_safety / segments_checked
+        
+        # Ensure realistic range (20-90)
+        safety_score = max(20, min(90, avg_safety))
         
         return round(safety_score)
         
     except Exception as e:
         print(f"Safety calculation error: {e}")
-        return 75  # Higher default on error
+        return 50  # Lower default on error
 
 def get_nearby_crimes(lat, lng, radius=0.002):
     """Get crimes within radius of a point"""
@@ -399,7 +438,7 @@ def get_nearby_crimes(lat, lng, radius=0.002):
             cell_key = f"{lat_cell},{lng_cell}"
             if cell_key in spatial_grid:
                 for crime in spatial_grid[cell_key]:
-                    distance = haversine_distance(lat, lng, crime['lat'], crime['lon'])
+                    distance = haversine_distance(lat, lng, crime['lat'], crime['lng'])
                     if distance <= radius:
                         nearby_crimes.append(crime)
     
@@ -408,13 +447,13 @@ def get_nearby_crimes(lat, lng, radius=0.002):
 def get_time_risk_multiplier(hour):
     """Get risk multiplier based on time of day"""
     if 22 <= hour or hour <= 5:
-        return 1.4  # Higher risk late night
+        return 0.6  # Much lower safety at night
     elif 18 <= hour <= 21:
-        return 1.2  # Medium risk evening  
+        return 0.8  # Lower safety in evening  
     elif 6 <= hour <= 17:
-        return 1.0  # Day time
+        return 1.0  # Normal safety during day
     else:
-        return 1.1  # Very gentle adjustment
+        return 0.9  # Slightly lower safety
 
 def get_crime_weight(offense):
     """Get weight factor for different crime types"""
@@ -433,7 +472,7 @@ def get_crime_weight(offense):
 
 def calculate_distance_factor(lat1, lng1, crime):
     """Calculate distance-based risk factor"""
-    distance = haversine_distance(lat1, lng1, crime['lat'], crime['lon'])
+    distance = haversine_distance(lat1, lng1, crime['lat'], crime['lng'])
     
     # Risk decreases with distance
     if distance <= 0.0005:  # Very close (50m)
@@ -444,6 +483,27 @@ def calculate_distance_factor(lat1, lng1, crime):
         return 0.4
     else:
         return 0.1
+
+def get_area_safety_score(lat, lng):
+    """Get safety score for an area based on known dangerous neighborhoods"""
+    # Known dangerous areas in Athens with their approximate coordinates
+    dangerous_areas = {
+        'Omonia': {'lat': 37.9838, 'lng': 23.7275, 'safety': 25, 'radius': 0.01},
+        'Victoria': {'lat': 37.9917, 'lng': 23.7317, 'safety': 30, 'radius': 0.008},
+        'Menidi': {'lat': 38.0167, 'lng': 23.7167, 'safety': 20, 'radius': 0.012},
+        'Exarchia': {'lat': 37.9833, 'lng': 23.7333, 'safety': 35, 'radius': 0.008},
+        'Metaxourgio': {'lat': 37.9833, 'lng': 23.7167, 'safety': 40, 'radius': 0.006},
+        'Psiri': {'lat': 37.9833, 'lng': 23.7250, 'safety': 45, 'radius': 0.005},
+    }
+    
+    # Check if we're near any dangerous areas
+    for area_name, area_data in dangerous_areas.items():
+        distance = haversine_distance(lat, lng, area_data['lat'], area_data['lng'])
+        if distance <= area_data['radius']:
+            return area_data['safety']
+    
+    # Default safety for areas not in dangerous zones
+    return 70
 
 def haversine_distance(lat1, lng1, lat2, lng2):
     """Calculate distance between two points using Haversine formula"""

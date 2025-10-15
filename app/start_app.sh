@@ -21,8 +21,24 @@ if [ "$IS_WINDOWS" = true ]; then
     # Windows: Use start command to open new terminal
     start "Pathly Backend" bash -c "cd server && ./start_flask.sh"
 else
-    # Linux/Mac: Use gnome-terminal or xterm
-    if command_exists gnome-terminal; then
+    # macOS: Use iTerm2 or Terminal.app
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # Check if iTerm2 is available
+        if command_exists osascript && osascript -e 'tell application "iTerm2" to get version' >/dev/null 2>&1; then
+            # Use iTerm2
+            osascript -e "tell application \"iTerm2\"
+                create window with default profile
+                tell current session of current window
+                    set name to \"Pathly Backend\"
+                    write text \"cd '$(pwd)/server' && ./start_flask.sh\"
+                end tell
+            end tell"
+        else
+            # Fallback to Terminal.app
+            osascript -e "tell application \"Terminal\" to do script \"cd '$(pwd)/server' && ./start_flask.sh\""
+        fi
+    # Linux: Use gnome-terminal or xterm
+    elif command_exists gnome-terminal; then
         gnome-terminal --title="Pathly Backend" -- bash -c "cd server && ./start_flask.sh; exec bash"
     elif command_exists xterm; then
         xterm -title "Pathly Backend" -e "cd server && ./start_flask.sh" &
@@ -42,8 +58,24 @@ if [ "$IS_WINDOWS" = true ]; then
     # Windows: Use start command
     start "Pathly Frontend" bash -c "npm start"
 else
-    # Linux/Mac: Use gnome-terminal or xterm
-    if command_exists gnome-terminal; then
+    # macOS: Use iTerm2 or Terminal.app
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # Check if iTerm2 is available
+        if command_exists osascript && osascript -e 'tell application "iTerm2" to get version' >/dev/null 2>&1; then
+            # Use iTerm2
+            osascript -e "tell application \"iTerm2\"
+                create window with default profile
+                tell current session of current window
+                    set name to \"Pathly Frontend\"
+                    write text \"cd '$(pwd)' && npm start\"
+                end tell
+            end tell"
+        else
+            # Fallback to Terminal.app
+            osascript -e "tell application \"Terminal\" to do script \"cd '$(pwd)' && npm start\""
+        fi
+    # Linux: Use gnome-terminal or xterm
+    elif command_exists gnome-terminal; then
         gnome-terminal --title="Pathly Frontend" -- bash -c "npm start; exec bash"
     elif command_exists xterm; then
         xterm -title "Pathly Frontend" -e "npm start" &

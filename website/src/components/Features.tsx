@@ -196,19 +196,33 @@ const Features: React.FC<FeaturesProps> = ({ isGreek }) => {
                 {/* Image/Video Content */}
                 <div className={`${index % 2 === 0 ? 'lg:order-2' : 'lg:order-1'} relative`}>
                   <div className="relative">
-                    {/* Placeholder for your gif/image */}
-                    <div className="w-full h-96 bg-gray-800 rounded-2xl flex items-center justify-center border border-gray-700">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-primary-neon/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <span className="text-2xl">📱</span>
-                        </div>
-                        <p className="text-gray-400 text-sm">
-                          {isGreek ? 'Εικόνα/Video θα προστεθεί εδώ' : 'Image/Video will be added here'}
-                        </p>
-                        <p className="text-primary-neon text-xs mt-2">
-                          {feature.image}
-                        </p>
-                      </div>
+                    <div className="w-full h-96 rounded-2xl overflow-hidden border border-gray-700 bg-black">
+                      {feature.id === 'ai-feedback' ? (
+                        <video
+                          src="/Real_Time_City_Data_Visualization.mp4"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover"
+                          style={{ objectPosition: '100% 0%' }}
+                        />
+                      ) : feature.id === 'customizable' ? (
+                        <video
+                          src="/Cinematic_App_Video_With_Time_Transitions.mp4"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={feature.image}
+                          alt={feature.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
 
                     {/* Green overlay when in view */}
@@ -220,24 +234,6 @@ const Features: React.FC<FeaturesProps> = ({ isGreek }) => {
           ))}
         </div>
 
-        {/* Footer CTA */}
-        <div className="text-center py-20">
-          <h3 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            {isGreek ? 'Έτοιμοι να δοκιμάσετε το Pathly;' : 'Ready to try Pathly?'}
-          </h3>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            {isGreek 
-              ? 'Εγγραφείτε για πρόωρη πρόσβαση και να είστε από τους πρώτους που θα δοκιμάσουν αυτές τις δυνατότητες.'
-              : 'Sign up for early access and be among the first to try these capabilities.'
-            }
-          </p>
-          <a
-            href="#home"
-            className="inline-flex items-center px-8 py-4 bg-primary-neon text-black font-semibold rounded-full hover:bg-green-400 transition-colors duration-300"
-          >
-            {isGreek ? 'Εγγραφή για Πρόωρη Πρόσβαση' : 'Get Early Access'}
-          </a>
-        </div>
       </div>
     </section>
   );

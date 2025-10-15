@@ -241,42 +241,24 @@ export default function SafeWalkMapView({
             pinColor="#ef4444"
           />
         )}
-        {routes.slice(0, 3).map((route, index) => {
+        {routes.slice(0, 2).map((route, index) => {
           const isSelected = route.id === selectedRouteId;
           const routeColor = getRouteColorByIndex(index);
-          const routeNumber = getRouteNumber(index);
           
-          // Optimize polyline coordinates - reduce points for better performance
+          // Heavily optimize polyline coordinates for performance
           const optimizedCoords = route.coords.filter((_, coordIndex) => 
-            coordIndex % Math.max(1, Math.floor(route.coords.length / 15)) === 0
+            coordIndex % Math.max(1, Math.floor(route.coords.length / 8)) === 0
           );
           
           return (
-            <React.Fragment key={route.id}>
-              {/* Route Polyline - Optimized */}
-              <Polyline
-                coordinates={optimizedCoords}
-                strokeColor={routeColor}
-                strokeWidth={isSelected ? 4 : 3}
-                lineCap="round"
-                lineJoin="round"
-              />
-              {/* Route Number Badge - Only for selected route to reduce markers */}
-              {isSelected && optimizedCoords.length > 0 && (
-                <Marker
-                  coordinate={optimizedCoords[Math.floor(optimizedCoords.length / 2)]}
-                  anchor={{ x: 0.5, y: 0.5 }}
-                >
-                  <View style={[
-                    styles.routeNumberBadge,
-                    { backgroundColor: routeColor },
-                    isSelected && styles.routeNumberBadgeSelected
-                  ]}>
-                    <Text style={styles.routeNumberText}>{routeNumber}</Text>
-                  </View>
-                </Marker>
-              )}
-            </React.Fragment>
+            <Polyline
+              key={route.id}
+              coordinates={optimizedCoords}
+              strokeColor={routeColor}
+              strokeWidth={isSelected ? 4 : 2}
+              lineCap="round"
+              lineJoin="round"
+            />
           );
         })}
       </MapView>

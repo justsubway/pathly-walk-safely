@@ -1,7 +1,8 @@
 import { LatLng, RouteResult } from '../lib/types';
 import { crimeDataService } from './crimeDataService';
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "your_google_maps_api_key_here";
+import { API_CONFIG } from './api-config';
+const GOOGLE_MAPS_API_KEY = API_CONFIG.GOOGLE_MAPS_API_KEY;
 const GOOGLE_DIRECTIONS_API = "https://maps.googleapis.com/maps/api/directions/json";
 
 export interface GoogleDirectionsResponse {
@@ -66,6 +67,9 @@ export async function getGoogleDirections(
   destination: LatLng,
   mode: 'walking' | 'driving' = 'walking'
 ): Promise<GoogleDirectionsResponse> {
+  if (!GOOGLE_MAPS_API_KEY) {
+    throw new Error('Google Maps API key not configured');
+  }
   const originStr = `${origin.latitude},${origin.longitude}`;
   const destinationStr = `${destination.latitude},${destination.longitude}`;
   

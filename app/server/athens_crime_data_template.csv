@@ -1,0 +1,11 @@
+date,time,datetime,latitude,longitude,incident_type,offense,description,location,neighborhood,district,severity,weapon_used,arrest_made,victim_count,officer_id,case_number,status
+2024-01-15,14:30:00,2024-01-15 14:30:00,37.9755,23.7348,Theft,Petty Theft,Theft of personal belongings,Syntagma Square,Plaka,Athens,Low,None,Yes,1,OFF001,ATH-2024-001,Closed
+2024-01-15,22:45:00,2024-01-15 22:45:00,37.9750,23.7350,Assault,Simple Assault,Physical altercation in bar,Monastiraki,Monastiraki,Athens,Medium,None,Yes,1,OFF002,ATH-2024-002,Closed
+2024-01-16,02:15:00,2024-01-16 02:15:00,37.9800,23.7200,Robbery,Armed Robbery,Armed robbery at convenience store,Exarchia,Exarchia,Athens,High,Knife,Yes,1,OFF003,ATH-2024-003,Open
+2024-01-16,09:20:00,2024-01-16 09:20:00,37.9700,23.7400,Vandalism,Property Damage,Graffiti on public building,Acropolis,Acropolis,Athens,Low,None,No,0,OFF004,ATH-2024-004,Closed
+2024-01-16,18:30:00,2024-01-16 18:30:00,37.9850,23.7300,Theft,Burglary,Residential burglary,Kolonaki,Kolonaki,Athens,Medium,None,No,1,OFF005,ATH-2024-005,Open
+2024-01-17,01:00:00,2024-01-17 01:00:00,37.9755,23.7348,Assault,Aggravated Assault,Assault with weapon,Syntagma Square,Plaka,Athens,High,Knife,Yes,1,OFF006,ATH-2024-006,Closed
+2024-01-17,12:00:00,2024-01-17 12:00:00,37.9600,23.7500,Theft,Vehicle Theft,Car theft from parking lot,Nea Smyrni,Nea Smyrni,Athens,Medium,None,No,1,OFF007,ATH-2024-007,Open
+2024-01-17,20:15:00,2024-01-17 20:15:00,37.9900,23.7100,Drugs,Drug Possession,Found with small amount of cannabis,Patissia,Patissia,Athens,Low,None,Yes,1,OFF008,ATH-2024-008,Closed
+2024-01-18,03:30:00,2024-01-18 03:30:00,37.9750,23.7350,Robbery,Street Robbery,Snatch and grab theft,Monastiraki,Monastiraki,Athens,Medium,None,No,1,OFF009,ATH-2024-009,Open
+2024-01-18,15:45:00,2024-01-18 15:45:00,37.9800,23.7200,Fraud,Identity Theft,Credit card fraud,Exarchia,Exarchia,Athens,Medium,None,Yes,1,OFF010,ATH-2024-010,Closed
